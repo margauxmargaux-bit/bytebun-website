@@ -448,7 +448,7 @@ footer { border-top: var(--line); padding-block: 36px 44px; }
             <div class="field"><label for="f-type">Event type</label>
               <select id="f-type" name="eventType" required>
                 <option value="">Choose one</option><option>Wedding</option><option>Baby shower</option><option>Birthday</option><option>Bridal shower</option><option>Corporate event</option><option>Something else</option>
-              </select></div>
+              </select><input id="f-other" name="eventTypeOther" aria-label="What's the occasion?" placeholder="What's the occasion?" style="margin-top:8px" hidden></div>
             <div class="field"><label for="f-pkg">Package</label>
               <select id="f-pkg" name="package">
                 <option value="">Not sure yet</option><option>The Nibble</option><option>The Byte</option><option>The Whole Bun</option>
@@ -610,7 +610,7 @@ footer { border-top: var(--line); padding-block: 36px 44px; }
     b.addEventListener("click", function () { document.getElementById("f-pkg").value = b.getAttribute("data-pkg"); });
   });
 
-  /* ===== Submit ===== */
+  var typeSel = document.getElementById("f-type"), otherIn = document.getElementById("f-other"); typeSel.addEventListener("change", function () { var on = typeSel.value === "Something else"; otherIn.hidden = !on; otherIn.required = on; if (on) otherIn.focus(); }); /* ===== Submit ===== */
   var form = document.getElementById("booking-form"), status = document.getElementById("form-status"), submit = document.getElementById("f-submit");
   function say(cls, msg) { status.className = "status" + (cls ? " " + cls : ""); status.textContent = msg; }
   form.addEventListener("submit", function (e) {
@@ -621,7 +621,7 @@ footer { border-top: var(--line); padding-block: 36px 44px; }
     var email = document.getElementById("f-email");
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.value.trim())) { say("err", "That email address looks incomplete. Check it and try again."); email.focus(); return; }
     var data = { date: selected };
-    new FormData(form).forEach(function (v, k) { data[k] = String(v).trim(); });
+    new FormData(form).forEach(function (v, k) { data[k] = String(v).trim(); }); if (data.eventType === "Something else" && data.eventTypeOther) data.eventType = data.eventTypeOther; delete data.eventTypeOther;
     if (demo) { say("ok", "Looks good! Once your booking sheet is connected, this sends the request and blocks the date."); return; }
     submit.disabled = true; say("", "Sending...");
     fetch(CONFIG.BOOKING_API_URL, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify(data) })
@@ -629,7 +629,7 @@ footer { border-top: var(--line); padding-block: 36px 44px; }
       .then(function (res) {
         if (res.ok) {
           booked[selected] = true; var when = picked.textContent; selected = null;
-          form.reset(); showPicked(); render();
+          form.reset(); otherIn.hidden = true; otherIn.required = false; showPicked(); render();
           say("ok", "Request sent for " + when + "! Check your email for a confirmation. We'll reply within one business day.");
         } else if (res.error === "taken") {
           say("err", "Someone just requested that date. Please pick another open date.");
